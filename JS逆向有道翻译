@@ -1,0 +1,71 @@
+JS逆向有道翻译：
+    1、翻译接口URL：https://fanyi.youdao.com/translate_o?smartresult=dict&smartresult=rule
+    2、对比两个from_data当中变化的数据
+    3、search搜索加密字段 格式化JS文件 在JS文件中搜索加密字段
+    4、判断加密位置 打上断点
+    5、分析加密方式（MD5）利用Python实现加密方式
+        from hashlib import md5
+        md = md5()
+        md.update(str.encode())
+        result = md.hexdigest()
+    6、实现破解
+    
+    
+    # -*- coding: utf-8 -*-
+# @Time    : 2021/7/5 13:45
+# @Author  : ZHALONG
+# @FileName: YouDaoFY.py
+# @Software: PyCharm
+
+import time
+import random
+from hashlib import md5
+import requests
+
+
+headers = {
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "zh-CN,zh;q=0.9",
+    "Connection": "keep-alive",
+    "Content-Length": "239",
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Cookie": "OUTFOX_SEARCH_USER_ID_NCOO=49222208.453283995; OUTFOX_SEARCH_USER_ID=917218242@10.169.0.84; _ga=GA1.2.1779502983.1624546613; JSESSIONID=aaaMZZNCV57UOeGE5m1Px; ___rl__test__cookies=1625464030712",
+    "Host": "fanyi.youdao.com",
+    "Origin": "https://fanyi.youdao.com",
+    "Pragma": "no-cache",
+    "Referer": "https://fanyi.youdao.com/",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "X-Requested-With": "XMLHttpRequest"
+}
+
+
+def main(word, salt, sign, lts):
+    url = "https://fanyi.youdao.com/translate_o?smartresult=dict&smartresult=rule"
+    form_data = {
+        "i": word,
+        "from": "AUTO",
+        "to": "AUTO",
+        "smartresult": "dict",
+        "client": "fanyideskweb",
+        "salt": salt,
+        "sign": sign,
+        "lts": lts,
+        "bv": "5b3e307b66a6c075d525ed231dcc8dcd",
+        "doctype": "json",
+        "version": "2.1",
+        "keyfrom": "fanyi.web",
+        "action": "FY_BY_REALTIME"
+    }
+    response = requests.post(url, headers=headers, data=form_data)
+    html_str_result = response.json().get("translateResult")[0][0]["tgt"]
+    print(html_str_result)
+
+if __name__ == '__main__':
+    word = input("请输入需要的查询：")
+    salt = str(int(time.time() * 1000)) + str(random.randint(0, 10))
+    md = md5()
+    md.update(("fanyideskweb" + word + salt + "Tbh5E8=q6U3EXe+&L[4c@").encode())
+    sign = md.hexdigest()
+    lts = str(int(time.time() * 1000))
+    main(word, salt, sign, lts)
